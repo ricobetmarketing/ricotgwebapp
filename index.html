@@ -4,9 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AdvantPlay</title>
-
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
 <style>
 * { box-sizing: border-box; }
 body {
@@ -24,53 +22,46 @@ body {
   margin-bottom: 14px;
   border:1px solid rgba(255,255,255,0.08);
 }
-h2 { margin-bottom:10px; }
-
+h2 { margin: 0 0 12px; }
 .btn {
   border:0;
-  padding:12px;
+  padding:12px 16px;
   border-radius:12px;
   background:#ff6a00;
   color:#fff;
   font-weight:bold;
   cursor:pointer;
 }
-
-.btn.secondary {
-  background:#252838;
-}
-
+.btn.secondary { background:#252838; }
 .row { display:flex; gap:10px; flex-wrap:wrap; }
-
-.status { margin-top:10px; font-size:14px; }
+.status { margin-top:10px; font-size:14px; color:#ffd9c2; }
 .pill {
-  margin-top:6px;
+  display:inline-block;
+  margin-top:8px;
   padding:6px 10px;
   border-radius:999px;
-  background:rgba(255,106,0,0.15);
+  background:rgba(255,106,0,0.12);
+  color:#ffb480;
 }
-
+input {
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:#151827;
+  color:#fff;
+  margin-top:8px;
+}
 .leader-item {
   display:flex;
   justify-content:space-between;
-  padding:8px 0;
+  padding:10px 0;
   border-bottom:1px solid rgba(255,255,255,0.08);
 }
-
-input {
-  width:100%;
-  padding:10px;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,0.1);
-  background:#151827;
-  color:#fff;
-  margin-top:10px;
-}
+.small { color:#b7b9c8; font-size:13px; margin-top:6px; }
 </style>
 </head>
-
 <body>
-
 <div class="wrap">
 
   <div class="card">
@@ -85,15 +76,18 @@ input {
 
   <div class="card">
     <h2>Referral</h2>
-    <button class="btn" onclick="generateLink()">Generate Link</button>
-    <input id="refLink" readonly placeholder="Your referral link" />
-    <button class="btn secondary" onclick="copyLink()">Copy</button>
+    <button class="btn" onclick="generateLink()">Generate 24h Link</button>
+    <input id="refLink" readonly placeholder="Your referral link will appear here" />
+    <div class="row" style="margin-top:10px;">
+      <button class="btn secondary" onclick="copyLink()">Copy</button>
+    </div>
+    <div class="small">Each Telegram account gets one unique link per day.</div>
   </div>
 
   <div class="card">
     <h2>Leaderboard</h2>
     <button class="btn secondary" onclick="loadLeaderboard()">Refresh</button>
-    <div id="leaderboard"></div>
+    <div id="leaderboard" style="margin-top:10px;"></div>
   </div>
 
 </div>
@@ -106,137 +100,165 @@ tg.expand();
 const telegramUser = tg.initDataUnsafe?.user || null;
 let currentUser = null;
 
-// ===== INIT USER =====
 async function initUser() {
   if (!telegramUser) {
-    document.getElementById("checkinStatus").innerText =
-      "Open via Telegram bot";
+    setStatus("Open this from Telegram bot.");
     return;
   }
 
   try {
     const res = await fetch(`${WORKER_URL}/api/me`, {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user: telegramUser })
     });
-
     const data = await res.json();
 
-    if (data.ok) {
-      currentUser = data.user;
-      updateXp(data.user.xp || 0);
-      document.getElementById("checkinStatus").innerText = "Ready";
-    } else {
-      document.getElementById("checkinStatus").innerText = data.error;
+    if (!data.ok) {
+      setStatus(data.error || "Init failed");
+      return;
     }
 
-  } catch (e) {
-    document.getElementById("checkinStatus").innerText = "Init error";
-    console.error(e);
+    currentUser = data.user;
+    updateXp(data.user.xp || 0);
+    setStatus("Ready");
+
+    await refreshCheckinStatus();
+    await loadLeaderboard();
+  } catch (err) {
+    setStatus("Init error");
+    console.error(err);
   }
 }
 
-// ===== CHECK IN =====
+async function refreshCheckinStatus() {
+  if (!telegramUser) return;
+  const res = await fetch(`${WORKER_URL}/api/checkin-status?telegram_id=${encodeURIComponent(telegramUser.id)}`);
+  const data = await res.json();
+  if (data.ok && data.checked_in) {
+    setStatus("You already checked in today.");
+  }
+}
+
 async function checkIn() {
   if (!telegramUser) return;
 
   if (!currentUser) {
-    document.getElementById("checkinStatus").innerText = "Initializing...";
     await initUser();
   }
 
   try {
     const res = await fetch(`${WORKER_URL}/api/checkin`, {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ telegram_id: telegramUser.id })
     });
 
-    const text = await res.text();
-    console.log("CHECKIN:", text);
+    const data = await res.json();
+    setStatus(data.message || data.error || "Unknown response");
 
-    const data = JSON.parse(text);
-
-    document.getElementById("checkinStatus").innerText =
-      data.message || data.error;
-
-    if (data.ok) updateXp(data.xp);
-
-  } catch (e) {
-    document.getElementById("checkinStatus").innerText = "Error";
-    console.error(e);
+    if (data.ok) {
+      updateXp(data.xp || 0);
+      await loadLeaderboard();
+    }
+  } catch (err) {
+    setStatus("Check-in error");
+    console.error(err);
   }
 }
 
-// ===== REFERRAL =====
 async function generateLink() {
-  const res = await fetch(`${WORKER_URL}/api/referral-link`, {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ telegram_id: telegramUser.id })
-  });
+  if (!telegramUser) return;
 
-  const data = await res.json();
-  if (data.ok) {
-    document.getElementById("refLink").value = data.link;
+  try {
+    const res = await fetch(`${WORKER_URL}/api/referral-link`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telegram_id: telegramUser.id })
+    });
+
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById("refLink").value = data.link;
+    } else {
+      setStatus(data.error || "Referral link failed");
+    }
+  } catch (err) {
+    setStatus("Referral link error");
+    console.error(err);
   }
 }
 
-// ===== GROUP CHECK =====
 async function checkGroup() {
-  const res = await fetch(`${WORKER_URL}/api/group-check`, {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ telegram_id: telegramUser.id })
-  });
+  if (!telegramUser) return;
 
-  const data = await res.json();
+  try {
+    const res = await fetch(`${WORKER_URL}/api/group-check`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telegram_id: telegramUser.id })
+    });
 
-  document.getElementById("checkinStatus").innerText =
-    data.joined ? "Joined ✅" : "Not joined ❌";
-}
+    const data = await res.json();
+    if (!data.ok) {
+      setStatus(data.error || "Group check failed");
+      return;
+    }
 
-// ===== LEADERBOARD =====
-async function loadLeaderboard() {
-  const res = await fetch(`${WORKER_URL}/api/leaderboard`);
-  const data = await res.json();
-
-  const box = document.getElementById("leaderboard");
-  box.innerHTML = "";
-
-  if (!data.leaderboard?.length) {
-    box.innerHTML = "No data yet";
-    return;
+    updateXp(data.xp || 0);
+    setStatus(data.joined ? `Joined ✅ (${data.status})` : `Not joined ❌ (${data.status})`);
+    await loadLeaderboard();
+  } catch (err) {
+    setStatus("Group check error");
+    console.error(err);
   }
-
-  data.leaderboard.forEach(u => {
-    box.innerHTML += `
-      <div class="leader-item">
-        <span>#${u.rank} ${u.name}</span>
-        <span>${u.xp} XP</span>
-      </div>
-    `;
-  });
 }
 
-// ===== UTIL =====
+async function loadLeaderboard() {
+  try {
+    const res = await fetch(`${WORKER_URL}/api/leaderboard`);
+    const data = await res.json();
+
+    const box = document.getElementById("leaderboard");
+    box.innerHTML = "";
+
+    if (!data.ok || !data.leaderboard?.length) {
+      box.innerHTML = `<div class="small">No data yet</div>`;
+      return;
+    }
+
+    data.leaderboard.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "leader-item";
+      div.innerHTML = `
+        <div>#${item.rank} ${item.name}</div>
+        <div>${item.xp} XP</div>
+      `;
+      box.appendChild(div);
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 function copyLink() {
   const input = document.getElementById("refLink");
   input.select();
+  input.setSelectionRange(0, 99999);
   document.execCommand("copy");
 }
 
 function updateXp(xp) {
-  document.getElementById("xpBox").innerText = "XP: " + xp;
+  document.getElementById("xpBox").innerText = `XP: ${xp}`;
 }
 
-// ===== START =====
+function setStatus(text) {
+  document.getElementById("checkinStatus").innerText = text;
+}
+
 (async () => {
   await initUser();
-  loadLeaderboard();
 })();
 </script>
-
 </body>
 </html>
