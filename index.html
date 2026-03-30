@@ -141,7 +141,7 @@ async function checkIn(){
   document.getElementById("checkinStatus").innerText = "Checking...";
 
   try{
-    const res = await fetch("https://YOUR-WORKER/checkin", {
+    const res = await fetch("https://ricowebapp.marketing-696.workers.dev/checkin", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
@@ -165,7 +165,7 @@ function generateLink(){
 
 // ===== LEADERBOARD =====
 async function loadLeaderboard(){
-  const res = await fetch("https://ricowebapp.marketing-696.workers.dev/");
+  const res = await fetch("https://ricowebapp.marketing-696.workers.dev/leaderboard");
   const data = await res.json();
 
   const box = document.getElementById("leaderboard");
