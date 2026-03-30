@@ -165,7 +165,7 @@ function generateLink(){
 
 // ===== LEADERBOARD =====
 async function loadLeaderboard(){
-  const res = await fetch("https://YOUR-WORKER/leaderboard");
+  const res = await fetch("https://ricowebapp.marketing-696.workers.dev/");
   const data = await res.json();
 
   const box = document.getElementById("leaderboard");
