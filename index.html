@@ -136,25 +136,31 @@
     const telegramUser = tg.initDataUnsafe?.user || null;
     let currentUser = null;
 
-    async function initUser() {
-      if (!telegramUser) {
-        document.getElementById("checkinStatus").innerText =
-          "Telegram user not detected. Open this from the bot.";
-        return;
-      }
+  async function checkIn() {
+  if (!telegramUser) return;
 
-      const res = await fetch(`${WORKER_URL}/api/me`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: telegramUser })
-      });
+  try {
+    const res = await fetch(`${WORKER_URL}/api/checkin`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telegram_id: telegramUser.id })
+    });
 
-      const data = await res.json();
-      if (data.ok) {
-        currentUser = data.user;
-        updateXp(data.user.xp || 0);
-      }
-    }
+    const text = await res.text();
+    console.log("CHECKIN RAW:", text);
+
+    const data = JSON.parse(text);
+
+    document.getElementById("checkinStatus").innerText =
+      data.message || data.error || "Unknown response";
+
+    if (data.ok) updateXp(data.xp || 0);
+
+  } catch (err) {
+    document.getElementById("checkinStatus").innerText = "ERROR: " + err.message;
+    console.error(err);
+  }
+}
 
     async function checkIn() {
       if (!telegramUser) return;
