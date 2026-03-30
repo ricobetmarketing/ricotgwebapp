@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdvantPlay Mini App</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+body{
+  margin:0;
+  font-family: Arial;
+  background:#0f0f1a;
+  color:#fff;
+}
+
+.container{
+  padding:15px;
+}
+
+.card{
+  background:linear-gradient(145deg,#1a1a2e,#12121f);
+  border-radius:16px;
+  padding:15px;
+  margin-bottom:15px;
+  border:1px solid rgba(255,255,255,0.08);
+}
+
+.title{
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
+.btn{
+  background:#ff6a00;
+  padding:10px 15px;
+  border-radius:10px;
+  border:none;
+  color:#fff;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.secondary{
+  background:#2a2a3d;
+}
+
+.row{
+  display:flex;
+  gap:10px;
+}
+
+.tab{
+  flex:1;
+  text-align:center;
+  padding:10px;
+  border-radius:10px;
+  background:#222;
+  cursor:pointer;
+}
+
+.active{
+  background:#ff6a00;
+}
+
+.hidden{
+  display:none;
+}
+
+.leader{
+  padding:10px;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- CHECK IN -->
+  <div class="card">
+    <div class="title">✅ Daily Check-in</div>
+    <button class="btn" onclick="checkIn()">Check In</button>
+    <p id="checkinStatus">Loading...</p>
+  </div>
+
+  <!-- JOURNEY -->
+  <div class="card">
+    <div class="title">🏆 Rewards Journey</div>
+    <p>1) Check-in</p>
+    <p>2) Invite friends</p>
+    <p>3) Claim rewards</p>
+  </div>
+
+  <!-- REFERRAL -->
+  <div class="card">
+    <div class="title">🔗 Referral Link</div>
+    <button class="btn" onclick="generateLink()">Generate Link</button>
+    <p id="refLink"></p>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="card">
+    <div class="title">🏆 Leaderboard</div>
+
+    <div class="row">
+      <div class="tab active" onclick="switchTab('xp')">XP</div>
+      <div class="tab" onclick="switchTab('aff')">Affiliate</div>
+    </div>
+
+    <div id="xpTab">
+      <div id="leaderboard"></div>
+    </div>
+
+    <div id="affTab" class="hidden">
+      <p>Affiliate data coming soon</p>
+    </div>
+
+  </div>
+
+  <!-- INFO -->
+  <div class="card">
+    <div class="title">ℹ️ Info Hub</div>
+    <p>✔ Daily check-in = XP</p>
+    <p>✔ Invite friends = bonus</p>
+    <p>✔ Top players = rewards</p>
+  </div>
+
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.expand();
+
+let user = tg.initDataUnsafe.user || { id: "demo" };
+
+// ===== CHECK IN =====
+async function checkIn(){
+  document.getElementById("checkinStatus").innerText = "Checking...";
+
+  try{
+    const res = await fetch("https://YOUR-WORKER/checkin", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({
+        telegram_id: user.id
+      })
+    });
+
+    const data = await res.json();
+    document.getElementById("checkinStatus").innerText = data.message;
+
+  }catch(e){
+    document.getElementById("checkinStatus").innerText = "Error";
+  }
+}
+
+// ===== REFERRAL =====
+function generateLink(){
+  const link = `https://t.me/YOUR_BOT?start=ref_${user.id}`;
+  document.getElementById("refLink").innerText = link;
+}
+
+// ===== LEADERBOARD =====
+async function loadLeaderboard(){
+  const res = await fetch("https://YOUR-WORKER/leaderboard");
+  const data = await res.json();
+
+  const box = document.getElementById("leaderboard");
+  box.innerHTML = "";
+
+  data.forEach((u,i)=>{
+    box.innerHTML += `
+      <div class="leader">
+        #${i+1} ${u.name} - ${u.xp} XP
+      </div>
+    `;
+  });
+}
+
+// ===== TAB SWITCH =====
+function switchTab(tab){
+  document.getElementById("xpTab").classList.toggle("hidden", tab !== "xp");
+  document.getElementById("affTab").classList.toggle("hidden", tab !== "aff");
+}
+
+// LOAD
+loadLeaderboard();
+</script>
+
+</body>
+</html>
