@@ -171,6 +171,44 @@
     const API = "https://ricowebapp.marketing-696.workers.dev";
     let ADMIN_PASSWORD = "";
 
+    // 1. THIS IS THE FIXED LOGIN FUNCTION
+    async function adminLogin() {
+        const passInput = document.getElementById("adminPassword");
+        const status = document.getElementById("loginStatus");
+        const password = passInput.value.trim();
+
+        if (!password) {
+            status.innerText = "Please enter a password";
+            return;
+        }
+
+        try {
+            status.innerText = "Authenticating...";
+            
+            const res = await fetch(`${API}/admin/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password: password })
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.ok) {
+                // Login Success
+                ADMIN_PASSWORD = password;
+                document.getElementById("loginView").classList.add("hidden");
+                document.getElementById("appView").classList.remove("hidden");
+                loadDashboard(); // Load first tab data
+            } else {
+                // Login Failed
+                status.innerText = data.error || "Invalid Admin Password";
+            }
+        } catch (e) {
+            console.error(e);
+            status.innerText = "Connection error. Is the Worker running?";
+        }
+    }
+
     function getHeaders() {
         return {
             "Content-Type": "application/json",
@@ -178,30 +216,13 @@
         };
     }
 
-    // Example modification for your Worker's login endpoint
-async function handleAdminLogin(request, env) {
-  const { password } = await request.json();
-  
-  // Directly compare against the environment variable you just set
-  if (password === env.ADMIN_PASSWORD) {
-    return new Response(JSON.stringify({ ok: true }), {
-      headers: { "Content-Type": "application/json" }
-    });
-  } else {
-    return new Response(JSON.stringify({ ok: false, error: "Invalid password" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" }
-    });
-  }
-}
-
     function showTab(name, btn) {
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
         document.getElementById(`tab-${name}`).classList.remove('hidden');
         
-        // Refresh data for the specific tab
+        if(name === 'dashboard') loadDashboard();
         if(name === 'users') loadUsers();
         if(name === 'rules') loadRules();
         if(name === 'logs') loadLogs();
@@ -241,7 +262,7 @@ async function handleAdminLogin(request, env) {
                 <td>${u.xp}</td>
                 <td>${u.referred_by || '-'}</td>
                 <td>${u.joined_group ? '✅' : '❌'}</td>
-                <td>${u.last_checkin_at ? new Date(u.last_checkin_at).toLocaleDateString() : 'Never'}</td>
+                <td>${u.last_checkin_at || 'Never'}</td>
             </tr>
         `).join('');
     }
