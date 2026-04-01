@@ -1,264 +1,238 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AdvantPlay</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #0f1018;
-  color: #fff;
-  padding: 16px;
-}
-.wrap { max-width: 760px; margin: 0 auto; }
-.card {
-  background: linear-gradient(180deg,#181a26,#11131d);
-  border-radius: 18px;
-  padding: 18px;
-  margin-bottom: 14px;
-  border:1px solid rgba(255,255,255,0.08);
-}
-h2 { margin: 0 0 12px; }
-.btn {
-  border:0;
-  padding:12px 16px;
-  border-radius:12px;
-  background:#ff6a00;
-  color:#fff;
-  font-weight:bold;
-  cursor:pointer;
-}
-.btn.secondary { background:#252838; }
-.row { display:flex; gap:10px; flex-wrap:wrap; }
-.status { margin-top:10px; font-size:14px; color:#ffd9c2; }
-.pill {
-  display:inline-block;
-  margin-top:8px;
-  padding:6px 10px;
-  border-radius:999px;
-  background:rgba(255,106,0,0.12);
-  color:#ffb480;
-}
-input {
-  width:100%;
-  padding:12px;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,0.08);
-  background:#151827;
-  color:#fff;
-  margin-top:8px;
-}
-.leader-item {
-  display:flex;
-  justify-content:space-between;
-  padding:10px 0;
-  border-bottom:1px solid rgba(255,255,255,0.08);
-}
-.small { color:#b7b9c8; font-size:13px; margin-top:6px; }
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AdvantPlay | Rewards</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0f1018;
+            --card-bg: linear-gradient(180deg, #1d1f2e 0%, #11131d 100%);
+            --accent: #ff6a00;
+            --accent-glow: rgba(255, 106, 0, 0.3);
+            --text-main: #ffffff;
+            --text-dim: #b7b9c8;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+
+        .container { max-width: 500px; margin: 0 auto; padding: 20px; }
+
+        /* Header / Stats */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .brand { font-size: 20px; font-weight: 800; letter-spacing: 1px; color: var(--accent); }
+        .xp-badge {
+            background: var(--accent-glow);
+            border: 1px solid var(--accent);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        /* Cards */
+        .section-title { font-size: 14px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-secondary { background: #252838; margin-top: 10px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Referral Box */
+        .input-group { position: relative; margin-top: 15px; }
+        input {
+            width: 100%;
+            background: #090a0f;
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 10px;
+            color: white;
+            font-size: 13px;
+        }
+
+        /* Leaderboard */
+        .leaderboard-list { margin-top: 10px; }
+        .leader-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .rank { width: 30px; font-weight: bold; color: var(--accent); }
+        .name { flex: 1; font-size: 15px; }
+        .xp-val { font-weight: bold; color: var(--text-main); }
+
+        /* Drops / Rewards Journey */
+        .drop-empty { text-align: center; color: var(--text-dim); padding: 20px; font-size: 14px; }
+        .journey-step { display: flex; gap: 10px; margin-bottom: 10px; font-size: 14px; align-items: center; }
+        .check-icon { color: #00ff88; }
+
+        .status-msg { font-size: 13px; color: var(--accent); margin-top: 10px; text-align: center; }
+    </style>
 </head>
 <body>
-<div class="wrap">
 
-  <div class="card">
-    <h2>Daily Check-in</h2>
-    <div class="row">
-      <button class="btn" onclick="checkIn()">Check In</button>
-      <button class="btn secondary" onclick="checkGroup()">Check Group</button>
+<div class="container">
+    <div class="header">
+        <div class="brand">ADVANTPLAY</div>
+        <div id="xpDisplay" class="xp-badge">0 XP</div>
     </div>
-    <div id="checkinStatus" class="status">Initializing...</div>
-    <div id="xpBox" class="pill">XP: 0</div>
-  </div>
 
-  <div class="card">
-    <h2>Referral</h2>
-    <button class="btn" onclick="generateLink()">Generate 24h Link</button>
-    <input id="refLink" readonly placeholder="Your referral link will appear here" />
-    <div class="row" style="margin-top:10px;">
-      <button class="btn secondary" onclick="copyLink()">Copy</button>
+    <div class="section-title"><i class="fas fa-fire"></i> Campaign Rewards</div>
+    <div class="card" id="dropsContainer">
+        <div class="drop-empty">No active drops at the moment. Keep an eye on the channel!</div>
     </div>
-    <div class="small">Each Telegram account gets one unique link per day.</div>
-  </div>
 
-  <div class="card">
-    <h2>Leaderboard</h2>
-    <button class="btn secondary" onclick="loadLeaderboard()">Refresh</button>
-    <div id="leaderboard" style="margin-top:10px;"></div>
-  </div>
+    <div class="section-title"><i class="fas fa-calendar-check"></i> Daily Tasks</div>
+    <div class="card">
+        <div class="journey-step"><i class="fas fa-check-circle check-icon"></i> Check-in Daily</div>
+        <div class="journey-step"><i class="fas fa-users"></i> Invite Friends</div>
+        <button class="btn" id="checkInBtn" onclick="checkIn()">Claim Daily XP</button>
+        <button class="btn btn-secondary" onclick="checkGroup()">Verify Group Join</button>
+        <div id="statusMsg" class="status-msg">Welcome back!</div>
+    </div>
 
+    <div class="section-title"><i class="fas fa-link"></i> Referral Program</div>
+    <div class="card">
+        <button class="btn" onclick="generateLink()">Generate New Link (24h)</button>
+        <div class="input-group">
+            <input id="refLink" readonly placeholder="Link will appear here...">
+        </div>
+        <button class="btn btn-secondary" onclick="copyLink()"><i class="fas fa-copy"></i> Copy Link</button>
+        <p style="font-size: 11px; color: var(--text-dim); margin-top: 10px; text-align: center;">
+            Links expire every 24h for security.
+        </p>
+    </div>
+
+    <div class="header" style="margin-bottom: 10px; margin-top: 20px;">
+        <div class="section-title" style="margin:0;"><i class="fas fa-trophy"></i> Weekly Leaderboard</div>
+        <button onclick="loadLeaderboard()" style="background:none; border:none; color:var(--accent); cursor:pointer;">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+    <div class="card">
+        <div id="leaderboard" class="leaderboard-list">
+            </div>
+    </div>
 </div>
 
 <script>
-const WORKER_URL = "https://ricowebapp.marketing-696.workers.dev";
-const tg = window.Telegram.WebApp;
-tg.expand();
+    const WORKER_URL = "https://ricowebapp.marketing-696.workers.dev";
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.headerColor = "#0f1018";
 
-const telegramUser = tg.initDataUnsafe?.user || null;
-let currentUser = null;
+    const telegramUser = tg.initDataUnsafe?.user || null;
 
-async function initUser() {
-  if (!telegramUser) {
-    setStatus("Open this from Telegram bot.");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${WORKER_URL}/api/me`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user: telegramUser })
-    });
-    const data = await res.json();
-
-    if (!data.ok) {
-      setStatus(data.error || "Init failed");
-      return;
+    async function checkIn() {
+        if (!telegramUser) return;
+        const btn = document.getElementById('checkInBtn');
+        btn.disabled = true;
+        
+        try {
+            const res = await fetch(`${WORKER_URL}/api/checkin`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ telegram_id: telegramUser.id })
+            });
+            const data = await res.json();
+            document.getElementById('statusMsg').innerText = data.message || data.error;
+            if(data.ok) {
+                updateXpDisplay(data.xp);
+                loadLeaderboard();
+            }
+        } catch (e) {
+            document.getElementById('statusMsg').innerText = "Connection error";
+        } finally {
+            btn.disabled = false;
+        }
     }
 
-    currentUser = data.user;
-    updateXp(data.user.xp || 0);
-    setStatus("Ready");
-
-    await refreshCheckinStatus();
-    await loadLeaderboard();
-  } catch (err) {
-    setStatus("Init error");
-    console.error(err);
-  }
-}
-
-async function refreshCheckinStatus() {
-  if (!telegramUser) return;
-  const res = await fetch(`${WORKER_URL}/api/checkin-status?telegram_id=${encodeURIComponent(telegramUser.id)}`);
-  const data = await res.json();
-  if (data.ok && data.checked_in) {
-    setStatus("You already checked in today.");
-  }
-}
-
-async function checkIn() {
-  if (!telegramUser) return;
-
-  if (!currentUser) {
-    await initUser();
-  }
-
-  try {
-    const res = await fetch(`${WORKER_URL}/api/checkin`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ telegram_id: telegramUser.id })
-    });
-
-    const data = await res.json();
-    setStatus(data.message || data.error || "Unknown response");
-
-    if (data.ok) {
-      updateXp(data.xp || 0);
-      await loadLeaderboard();
-    }
-  } catch (err) {
-    setStatus("Check-in error");
-    console.error(err);
-  }
-}
-
-async function generateLink() {
-  if (!telegramUser) return;
-
-  try {
-    const res = await fetch(`${WORKER_URL}/api/referral-link`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ telegram_id: telegramUser.id })
-    });
-
-    const data = await res.json();
-    if (data.ok) {
-      document.getElementById("refLink").value = data.link;
-    } else {
-      setStatus(data.error || "Referral link failed");
-    }
-  } catch (err) {
-    setStatus("Referral link error");
-    console.error(err);
-  }
-}
-
-async function checkGroup() {
-  if (!telegramUser) return;
-
-  try {
-    const res = await fetch(`${WORKER_URL}/api/group-check`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ telegram_id: telegramUser.id })
-    });
-
-    const data = await res.json();
-    if (!data.ok) {
-      setStatus(data.error || "Group check failed");
-      return;
+    async function loadLeaderboard() {
+        const box = document.getElementById("leaderboard");
+        try {
+            const res = await fetch(`${WORKER_URL}/api/leaderboard`);
+            const data = await res.json();
+            box.innerHTML = "";
+            data.leaderboard.forEach(item => {
+                box.innerHTML += `
+                    <div class="leader-item">
+                        <div class="rank">#${item.rank}</div>
+                        <div class="name">${item.name}</div>
+                        <div class="xp-val">${item.xp} XP</div>
+                    </div>`;
+            });
+        } catch (e) { box.innerHTML = "Failed to load."; }
     }
 
-    updateXp(data.xp || 0);
-    setStatus(data.joined ? `Joined ✅ (${data.status})` : `Not joined ❌ (${data.status})`);
-    await loadLeaderboard();
-  } catch (err) {
-    setStatus("Group check error");
-    console.error(err);
-  }
-}
-
-async function loadLeaderboard() {
-  try {
-    const res = await fetch(`${WORKER_URL}/api/leaderboard`);
-    const data = await res.json();
-
-    const box = document.getElementById("leaderboard");
-    box.innerHTML = "";
-
-    if (!data.ok || !data.leaderboard?.length) {
-      box.innerHTML = `<div class="small">No data yet</div>`;
-      return;
+    async function generateLink() {
+        const res = await fetch(`${WORKER_URL}/api/referral-link`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ telegram_id: telegramUser.id })
+        });
+        const data = await res.json();
+        if (data.ok) document.getElementById("refLink").value = data.link;
     }
 
-    data.leaderboard.forEach(item => {
-      const div = document.createElement("div");
-      div.className = "leader-item";
-      div.innerHTML = `
-        <div>#${item.rank} ${item.name}</div>
-        <div>${item.xp} XP</div>
-      `;
-      box.appendChild(div);
-    });
-  } catch (err) {
-    console.error(err);
-  }
-}
+    function copyLink() {
+        const input = document.getElementById("refLink");
+        input.select();
+        document.execCommand("copy");
+        tg.showAlert("Link copied to clipboard!");
+    }
 
-function copyLink() {
-  const input = document.getElementById("refLink");
-  input.select();
-  input.setSelectionRange(0, 99999);
-  document.execCommand("copy");
-}
+    function updateXpDisplay(xp) {
+        document.getElementById("xpDisplay").innerText = `${xp} XP`;
+    }
 
-function updateXp(xp) {
-  document.getElementById("xpBox").innerText = `XP: ${xp}`;
-}
+    // Auto-refresh leaderboard every 5 mins
+    setInterval(loadLeaderboard, 300000);
 
-function setStatus(text) {
-  document.getElementById("checkinStatus").innerText = text;
-}
-
-(async () => {
-  await initUser();
-})();
+    // Initial Load
+    (async () => {
+        if(telegramUser) {
+            // Fetch initial user data
+            const res = await fetch(`${WORKER_URL}/api/me`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user: telegramUser })
+            });
+            const data = await res.json();
+            if(data.ok) updateXpDisplay(data.user.xp);
+        }
+        loadLeaderboard();
+    })();
 </script>
 </body>
 </html>
