@@ -178,26 +178,22 @@
         };
     }
 
-    async function adminLogin() {
-        const pass = document.getElementById("adminPassword").value;
-        try {
-            const res = await fetch(`${API}/admin/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ password: pass })
-            });
-            if (res.status === 200) {
-                ADMIN_PASSWORD = pass;
-                document.getElementById("loginView").classList.add("hidden");
-                document.getElementById("appView").classList.remove("hidden");
-                loadDashboard();
-            } else {
-                document.getElementById("loginStatus").innerText = "Invalid Admin Credentials";
-            }
-        } catch (e) {
-            document.getElementById("loginStatus").innerText = "Server connection error";
-        }
-    }
+    // Example modification for your Worker's login endpoint
+async function handleAdminLogin(request, env) {
+  const { password } = await request.json();
+  
+  // Directly compare against the environment variable you just set
+  if (password === env.ADMIN_PASSWORD) {
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { "Content-Type": "application/json" }
+    });
+  } else {
+    return new Response(JSON.stringify({ ok: false, error: "Invalid password" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+}
 
     function showTab(name, btn) {
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
