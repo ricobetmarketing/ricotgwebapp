@@ -197,7 +197,20 @@
         <button class="btn-primary" onclick="createPostTask()">Activate Post Task</button>
     </div>
 </section>
-        
+        <div class="section-title">Active Post Tasks</div>
+<div class="card">
+    <table id="taskHistoryTable" style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr style="text-align: left; color: var(--text-dim); font-size: 12px;">
+                <th>Post ID</th>
+                <th>Keyword</th>
+                <th>XP</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="taskHistoryBody"></tbody>
+    </table>
+</div>
         <section id="tab-logs" class="hidden">
             <div class="card">
                 <h2>Transaction History</h2>
@@ -355,6 +368,22 @@ async function createPostTask() {
     } catch (e) {
         alert("Failed to save task");
     }
+}
+
+    async function loadTaskHistory() {
+    const res = await fetch(`${WORKER_URL}/admin/post-tasks`, {
+        headers: { "X-Admin-Password": adminPassword }
+    });
+    const data = await res.json();
+    const tbody = document.getElementById('taskHistoryBody');
+    tbody.innerHTML = data.tasks.map(t => `
+        <tr style="border-top: 1px solid var(--border);">
+            <td>${t.post_id}</td>
+            <td>${t.keyword || 'Any'}</td>
+            <td>${t.xp_reward}</td>
+            <td><button onclick="deleteTask(${t.id})">Delete</button></td>
+        </tr>
+    `).join('');
 }
     
     async function saveRules() {
