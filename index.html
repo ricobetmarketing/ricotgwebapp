@@ -114,12 +114,16 @@
     </div>
 
     <div class="section-title"><i class="fas fa-calendar-check"></i> Daily Tasks</div>
-    <div class="card">
-        <div class="journey-step"><i class="fas fa-check-circle check-icon"></i> Check-in Daily</div>
-        <div class="journey-step"><i class="fas fa-users"></i> Invite Friends</div>
-        <button class="btn" id="checkInBtn" onclick="checkIn()">Claim Daily XP</button>
-        <div id="statusMsg" class="status-msg">Welcome back!</div>
-    </div>
+<div class="card">
+    <div class="journey-step"><i class="fas fa-check-circle check-icon"></i> Check-in Daily</div>
+    <div class="journey-step"><i class="fas fa-comments"></i> Group Activity (Chat/React)</div>
+    
+    <button class="btn" id="checkInBtn" onclick="checkIn()">Claim Daily XP</button>
+    
+    <button class="btn btn-secondary" id="activityBtn" onclick="claimActivityXp()">Claim Activity Bonus</button>
+    
+    <div id="statusMsg" class="status-msg">Welcome back!</div>
+</div>
 
     <div class="section-title"><i class="fas fa-link"></i> Referral Program</div>
     <div class="card">
@@ -247,6 +251,29 @@ window.myInviteText = `Hey! Join the RicoBet community group to earn XP and rewa
         });
     }
 
+    async function claimActivityXp() {
+    if (!telegramUser) return;
+    const btn = document.getElementById('activityBtn');
+    btn.disabled = true;
+    
+    try {
+        const res = await fetch(`${WORKER_URL}/api/activity-check`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ telegram_id: telegramUser.id })
+        });
+        const data = await res.json();
+        document.getElementById('statusMsg').innerText = data.message;
+        if(data.ok) {
+            updateXpDisplay(data.xp);
+        }
+    } catch (e) {
+        document.getElementById('statusMsg').innerText = "Connection error";
+    } finally {
+        btn.disabled = false;
+    }
+}
+    
     async function loadLeaderboard() {
         const box = document.getElementById("leaderboard");
         try {
