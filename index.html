@@ -272,21 +272,42 @@ window.myInviteText = `Hey! Join the RicoBet community group to earn XP and rewa
     // Auto-refresh leaderboard every 5 mins
     setInterval(loadLeaderboard, 300000);
 
-    // Initial Load
-    (async () => {
-        if(telegramUser) {
-            try {
-                const res = await fetch(`${WORKER_URL}/api/me`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ user: telegramUser })
-                });
-                const data = await res.json();
-                if(data.ok) updateXpDisplay(data.user.xp);
-            } catch(e) { console.log("Init error", e); }
+// This runs automatically every time the app opens
+(async () => {
+    if(telegramUser) {
+        try {
+            // 1. Log the user in / Register them
+            const res = await fetch(`${WORKER_URL}/api/me`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user: telegramUser })
+            });
+            const data = await res.json();
+            if(data.ok) updateXpDisplay(data.user.xp);
+
+            // 2. AUTOMATIC VERIFICATION
+            // The user doesn't need to click anything. 
+            // We check their membership in the background right now.
+            const checkRes = await fetch(`${WORKER_URL}/api/group-check`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ telegram_id: telegramUser.id })
+            });
+            const checkData = await checkRes.json();
+            
+            if(checkData.joined) {
+                // If they are in the channel/group, update their XP display immediately
+                updateXpDisplay(checkData.xp);
+                document.getElementById('statusMsg').innerText = "Welcome! Channel rewards verified.";
+            } else {
+                document.getElementById('statusMsg').innerText = "Join the channel to earn more XP!";
+            }
+        } catch(e) {
+            console.log("Auto-verify failed", e);
         }
-        loadLeaderboard();
-    })();
+    }
+    loadLeaderboard();
+})();
 </script>
 </body>
 </html>
