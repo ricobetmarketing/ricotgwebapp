@@ -153,6 +153,9 @@
     tg.headerColor = "#0f1018";
 
     const telegramUser = tg.initDataUnsafe?.user || null;
+    
+    // Variable to store the full invitation sentence
+    window.myInviteText = "";
 
     async function checkIn() {
         if (!telegramUser) return;
@@ -178,6 +181,73 @@
         }
     }
 
+    async function checkGroup() {
+        if (!telegramUser) return;
+        document.getElementById('statusMsg').innerText = "Verifying...";
+        try {
+            const res = await fetch(`${WORKER_URL}/api/group-check`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ telegram_id: telegramUser.id })
+            });
+            const data = await res.json();
+            if (data.joined) {
+                document.getElementById('statusMsg').innerText = "Verified! XP Updated.";
+                updateXpDisplay(data.xp);
+            } else {
+                document.getElementById('statusMsg').innerText = "Please join the group first!";
+            }
+        } catch (e) {
+            document.getElementById('statusMsg').innerText = "Verification failed.";
+        }
+    }
+
+    async function generateLink() {
+        if (!telegramUser) return;
+        try {
+            const res = await fetch(`${WORKER_URL}/api/referral-link`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ telegram_id: telegramUser.id })
+            });
+            const data = await res.json();
+            
+            if (data.ok) {
+                // Update the input box visually
+                document.getElementById("refLink").value = data.link;
+                
+                // Store the full sentence for the copy button
+                // This creates: Hey! Join me on RicoBet... [Link]
+                window.myInviteText = `Hey! Join me on RicoBet to earn XP and rewards. Use my link to get started: ${data.link}`;
+                
+                document.getElementById('statusMsg').innerText = "Link generated!";
+            }
+        } catch (e) {
+            document.getElementById('statusMsg').innerText = "Failed to generate link.";
+        }
+    }
+
+    function copyLink() {
+        const textToCopy = window.myInviteText; 
+        if (!textToCopy) {
+            alert("Please generate a link first!");
+            return;
+        }
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            alert("Invitation sentence & link copied!");
+        }).catch(err => {
+            // Fallback for older mobile browsers
+            const textArea = document.createElement("textarea");
+            textArea.value = textToCopy;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert("Invitation copied!");
+        });
+    }
+
     async function loadLeaderboard() {
         const box = document.getElementById("leaderboard");
         try {
@@ -195,23 +265,6 @@
         } catch (e) { box.innerHTML = "Failed to load."; }
     }
 
-    async function generateLink() {
-        const res = await fetch(`${WORKER_URL}/api/referral-link`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ telegram_id: telegramUser.id })
-        });
-        const data = await res.json();
-        if (data.ok) document.getElementById("refLink").value = data.link;
-    }
-
-    function copyLink() {
-        const input = document.getElementById("refLink");
-        input.select();
-        document.execCommand("copy");
-        tg.showAlert("Link copied to clipboard!");
-    }
-
     function updateXpDisplay(xp) {
         document.getElementById("xpDisplay").innerText = `${xp} XP`;
     }
@@ -222,14 +275,15 @@
     // Initial Load
     (async () => {
         if(telegramUser) {
-            // Fetch initial user data
-            const res = await fetch(`${WORKER_URL}/api/me`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user: telegramUser })
-            });
-            const data = await res.json();
-            if(data.ok) updateXpDisplay(data.user.xp);
+            try {
+                const res = await fetch(`${WORKER_URL}/api/me`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ user: telegramUser })
+                });
+                const data = await res.json();
+                if(data.ok) updateXpDisplay(data.user.xp);
+            } catch(e) { console.log("Init error", e); }
         }
         loadLeaderboard();
     })();
