@@ -124,6 +124,15 @@
     
     <div id="statusMsg" class="status-msg">Welcome back!</div>
 </div>
+    <div class="section-title"><i class="fab fa-telegram-plane"></i> Telegram Tasks</div>
+<div class="card">
+    <div id="postTaskContainer">
+        <p style="font-size: 13px; color: var(--text-dim);">Interact with our latest posts to earn bonus XP!</p>
+        <button class="btn btn-secondary" onclick="checkPostTasks()">
+            <i class="fas fa-sync-alt"></i> Check Interaction Rewards
+        </button>
+    </div>
+</div>
 
     <div class="section-title"><i class="fas fa-link"></i> Referral Program</div>
     <div class="card">
@@ -273,7 +282,31 @@ window.myInviteText = `Hey! Join the RicoBet community group to earn XP and rewa
         btn.disabled = false;
     }
 }
+
+    async function checkPostTasks() {
+    if (!telegramUser) return;
+    const msg = document.getElementById('statusMsg');
+    msg.innerText = "Checking interactions...";
     
+    try {
+        // We reuse the /api/me call because it triggers the reward logic in the worker
+        const res = await fetch(`${WORKER_URL}/api/me`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user: telegramUser })
+        });
+        const data = await res.json();
+        
+        if(data.ok && data.new_reward_msg) {
+            updateXpDisplay(data.user.xp);
+            tg.showAlert(`Reward Claimed: ${data.new_reward_msg}`);
+        } else {
+            msg.innerText = "No new rewards found yet. Go react or comment on the channel!";
+        }
+    } catch (e) {
+        msg.innerText = "Task check failed.";
+    }
+}
     async function loadLeaderboard() {
         const box = document.getElementById("leaderboard");
         try {
@@ -309,25 +342,28 @@ window.myInviteText = `Hey! Join the RicoBet community group to earn XP and rewa
                 body: JSON.stringify({ user: telegramUser })
             });
             const data = await res.json();
-            if(data.ok) updateXpDisplay(data.user.xp);
-
-            // 2. AUTOMATIC VERIFICATION
-            // The user doesn't need to click anything. 
-            // We check their membership in the background right now.
-            const checkRes = await fetch(`${WORKER_URL}/api/group-check`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ telegram_id: telegramUser.id })
-            });
-            const checkData = await checkRes.json();
             
-            if(checkData.joined) {
-                // If they are in the channel/group, update their XP display immediately
-                updateXpDisplay(checkData.xp);
-                document.getElementById('statusMsg').innerText = "Welcome! Channel rewards verified.";
-            } else {
-                document.getElementById('statusMsg').innerText = "Join the channel to earn more XP!";
+            if(data.ok) {
+                updateXpDisplay(data.user.xp);
+
+                // --- NEW POP-UP LOGIC START ---
+                // If the backend found a task the user completed (reaction/comment)
+                if(data.new_reward_msg) {
+                    // We use a small delay so the app finishes loading first
+                    setTimeout(() => {
+                        // This triggers the "congratz" message you wrote in Admin
+                        tg.showAlert(`✨ MISSION COMPLETE ✨\n\n${data.new_reward_msg}`);
+                        
+                        // Optional: trigger haptic feedback for a "premium" feel
+                        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                    }, 1000);
+                }
+                // --- NEW POP-UP LOGIC END ---
             }
+
+            // 2. AUTOMATIC VERIFICATION (Keep your existing group check code here)
+            // ... (your existing checkRes code) ...
+
         } catch(e) {
             console.log("Auto-verify failed", e);
         }
