@@ -75,6 +75,7 @@
             <button class="nav-btn" onclick="showTab('rules', this)"><i class="fas fa-cog"></i> XP Rules</button>
             <button class="nav-btn" onclick="showTab('logs', this)"><i class="fas fa-history"></i> XP Logs</button>
             <button class="nav-btn" onclick="showTab('drops', this)"><i class="fas fa-gift"></i> Random Drops</button>
+            <button class="nav-btn" onclick="showTab('postTasks', this)"><i class="fas fa-bullhorn"></i> Post Tasks</button>
         </nav>
         <button class="nav-btn" style="margin-top: auto; color: #ff4444" onclick="location.reload()"><i class="fas fa-sign-out-alt"></i> Logout</button>
     </aside>
@@ -152,6 +153,50 @@
                 <button class="btn-primary" onclick="createDrop()">Blast Drop to App</button>
             </div>
         </section>
+
+        <section id="tab-postTasks" class="hidden">
+    <div class="card">
+        <h2>Setup Post Interaction Task</h2>
+        <p style="color: var(--text-dim); font-size: 13px;">Reward users for interacting with a specific Telegram post.</p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+                <label>Telegram Post ID</label>
+                <input id="taskPostId" placeholder="e.g. 12345">
+            </div>
+            <div>
+                <label>Action Type</label>
+                <select id="taskActionType">
+                    <option value="reaction">Any Reaction</option>
+                    <option value="comment">Any Comment</option>
+                    <option value="keyword">Specific Keyword</option>
+                </select>
+            </div>
+        </div>
+
+        <label>Keyword (Only if 'Specific Keyword' is selected)</label>
+        <input id="taskKeyword" placeholder="#RicoBetGo">
+
+        <label>XP Reward</label>
+        <input id="taskXp" type="number" placeholder="20">
+
+        <label>Success Message (Pop-up in Mini App)</label>
+        <input id="taskSuccessMsg" placeholder="Congrats! You liked our announcement!">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+                <label>Start Date</label>
+                <input id="taskStartDate" type="date">
+            </div>
+            <div>
+                <label>End Date</label>
+                <input id="taskEndDate" type="date">
+            </div>
+        </div>
+
+        <button class="btn-primary" onclick="createPostTask()">Activate Post Task</button>
+    </div>
+</section>
         
         <section id="tab-logs" class="hidden">
             <div class="card">
@@ -228,6 +273,7 @@
         if(name === 'logs') loadLogs();
     }
 
+    
     async function loadDashboard() {
         const res = await fetch(`${API}/admin/dashboard`, { headers: getHeaders() });
         const data = await res.json();
@@ -276,6 +322,41 @@
         });
     }
 
+    // Add to showTab function
+if(name === 'postTasks') { /* Ready for future list loading */ }
+
+async function createPostTask() {
+    const payload = {
+        post_id: document.getElementById("taskPostId").value,
+        action_type: document.getElementById("taskActionType").value,
+        keyword: document.getElementById("taskKeyword").value,
+        xp_reward: parseInt(document.getElementById("taskXp").value),
+        success_message: document.getElementById("taskSuccessMsg").value,
+        start_date: document.getElementById("taskStartDate").value,
+        end_date: document.getElementById("taskEndDate").value
+    };
+
+    if (!payload.post_id || !payload.xp_reward) {
+        alert("Please fill in Post ID and XP amount");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API}/admin/post-task`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            alert("Post task activated! Users will now be rewarded for interacting.");
+            // Clear inputs
+            document.getElementById("taskPostId").value = "";
+        }
+    } catch (e) {
+        alert("Failed to save task");
+    }
+}
+    
     async function saveRules() {
         const settings = [
             "daily_checkin_xp", "referral_qualified_xp", "group_join_xp", "leaderboard_limit"
